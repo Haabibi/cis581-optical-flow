@@ -15,7 +15,20 @@ def getFeatures(img,bbox):
         features: Coordinates of all feature points in first frame, (F, N, 2)
     Instruction: Please feel free to use cv2.goodFeaturesToTrack() or cv.cornerHarris()
     """
-    features = None
+    print(type(img))
+    y1=bbox[:,0,1][0]
+    y2=bbox[:,1,1][0]
+    x1=bbox[:,0,0][0]
+    x2=bbox[:,1,0][0]
+    crop_img=np.copy(img[y1:y2,x1:x2])
+    
+    features = cv2.goodFeaturesToTrack(crop_img,25,0.01,25)
+    corners=np.int32(features)
+    for i in corners:
+        x,y = i.ravel()
+        cv2.circle(img,(x,y),3,(0,0,255),30)
+    #print(features)
+    cv2.imwrite("result.jpg",img)
     return features
 
 
@@ -46,6 +59,8 @@ def estimateAllTranslation(features, img1, img2):
     Output:
         new_features: Coordinates of all feature points in second frame, (F, N, 2)
     """
+    
+    
     new_features = None      
     return new_features
 

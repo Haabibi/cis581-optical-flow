@@ -26,16 +26,24 @@ def objectTracking(rawVideo):
         print("frame:", frame_cnt)
         
         if frame_cnt == 1:
-            bbox = None
+            x,y,w,h=np.int32(cv2.selectROI("roi",frame,fromCenter=False))
+            print(x,y,w,h)
+            bbox = np.zeros((1,2,2),dtype=int)
+            bbox[:,0,0]=x
+            bbox[:,0,1]=y
+            bbox[:,1,0]=x+w
+            bbox[:,1,1]=y+h
+            print(bbox)
             features = getFeatures(frame, bbox)
             frame_old = frame.copy()
-
+        
         else:
             new_features = estimateAllTranslation(features, frame_old, frame)
             features, bbox = applyGeometricTransformation(features, new_features, bbox)
             frame_old = frame.copy()
             vis = frame.copy()
-
+            if(frame_cnt==20): #temp condition
+                break
             
             """ 
             TODO: Plot feature points and bounding boxes on vis
