@@ -88,3 +88,13 @@ def getWinBound(img_sz, startX, startY, win_size):
 
     return win_left, win_right, win_top, win_bottom
 
+def findGradient(img, ksize=5, sigma=1):
+    G = cv2.getGaussianKernel(ksize, sigma)
+    G = G @ G.T
+    fx = np.array([[1, -1]])
+    fy = fx.T
+    Gx = scipy.signal.convolve2d(G, fx, 'same', 'symm')[:, 1:]
+    Gy = scipy.signal.convolve2d(G, fy, 'same', 'symm')[1:, :]
+    Ix = scipy.signal.convolve2d(img, Gx, 'same', 'symm')
+    Iy = scipy.signal.convolve2d(img, Gy, 'same', 'symm')
+    return Ix, Iy
