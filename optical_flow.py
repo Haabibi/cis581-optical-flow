@@ -48,6 +48,7 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     It=img2-img1
     nr=np.arange(img1.shape[0])
     nc=np.arange(img1.shape[1])
+<<<<<<< Updated upstream
 #    i_It=interp2(It,nc,nr)
 #    i_Ix=interp2(Ix,nc,nr)
 #    i_Iy=interp2(Iy,nc,nr)
@@ -55,12 +56,21 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     winsize=15
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, feature[0], feature[1], winsize)
         
+=======
+    # i_It=interp2(It,nc,nr)
+    # i_Ix=interp2(Ix,nc,nr)
+    # i_Iy=interp2(Iy,nc,nr)
+    print("THIS IS FEATURE", feature)
+    winsize=15
+    win_l,win_r,win_t,win_b=getWinBound(img1.shape, feature[0][0], feature[0][1], winsize)
+    
+>>>>>>> Stashed changes
     
     A=np.hstack((Ix.reshape(-1,1),Iy.reshape(-1,1)))
     b=-It.reshape(-1,1)
     res=np.linalg.solve(A.T @ A, A.T @ b)
     
-    new_feature = [res[0,0], res[1,0]]
+    new_feature = feature + [res[0,0], res[1,0]]
     print("THIS IS RES", res)
     print("THIS IS NEW FEATURE", new_feature)
     return new_feature
