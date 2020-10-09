@@ -63,5 +63,3 @@ if __name__ == "__main__":
     objectTracking(rawVideo)
     
 
-
-
