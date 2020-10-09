@@ -24,6 +24,7 @@ def getFeatures(img,bbox):
     features = cv2.goodFeaturesToTrack(crop_img,7,0.01,30)
     corners=np.int32(features)
     map_to_original = np.array([[[x1, y1] for _ in range(len(corners))]]).reshape(corners.shape) + corners
+    
     for i in map_to_original:
         x,y = i.ravel()
         cv2.circle(img,(x,y),3,(0,0,255),3)
@@ -39,8 +40,8 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         feature: Coordinate of feature point in first frame, (2,)
         Ix: Gradient along the x direction, (H,W)
         Iy: Gradient along the y direction, (H,W)
-        img1: First image frame, (H,W,3)
-        img2: Second image frame, (H,W,3)
+        img1: First image frame, (H,W)
+        img2: Second image frame, (H,W)
     Output:
         new_feature: Coordinate of feature point in second frame, (2,)
     Instruction: Please feel free to use interp2() and getWinBound() from helpers
@@ -53,12 +54,16 @@ def estimateAllTranslation(features, img1, img2):
     """
     Description: Get corresponding points for all feature points
     Input:
-        features: Coordinates of all feature points in first frame, (F, N, 2)
+        features: Coordinates of all feature points in first frame, ( N, F, 2)
+        # N: is the num of features 
+        # f: 1 instance 
         img1: First image frame, (H,W,3)
         img2: Second image frame, (H,W,3)
     Output:
         new_features: Coordinates of all feature points in second frame, (F, N, 2)
     """
+
+    #gray_img = cv2.cvtColor()
     
     
     new_features = None      
