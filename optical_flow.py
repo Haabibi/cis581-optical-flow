@@ -48,13 +48,13 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     It=img2-img1
     nr=np.arange(img1.shape[0])
     nc=np.arange(img1.shape[1])
-    i_It=interp2(It,nc,nr)
-    i_Ix=interp2(Ix,nc,nr)
-    i_Iy=interp2(Iy,nc,nr)
-    
+#    i_It=interp2(It,nc,nr)
+#    i_Ix=interp2(Ix,nc,nr)
+#    i_Iy=interp2(Iy,nc,nr)
+
     winsize=15
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, feature[0], feature[1], winsize)
-    
+        
     
     A=np.hstack((Ix.reshape(-1,1),Iy.reshape(-1,1)))
     b=-It.reshape(-1,1)

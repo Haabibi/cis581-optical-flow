@@ -100,3 +100,21 @@ def findGradient(img, ksize=5, sigma=1):
     Ix = scipy.signal.convolve2d(img, Gx, 'same', 'symm')
     Iy = scipy.signal.convolve2d(img, Gy, 'same', 'symm')
     return Ix, Iy
+
+def optical_flow(img1, img2, ksize, sigma):
+    Jx, Jy = findGradient(img2, ksize, sigma)
+    It = img2 - img1
+    A = np.hstack((Jx.reshape(-1, 1), Jy.reshape(-1, 1)))
+    b = -It.reshape(-1, 1)
+    res = np.linalg.solve(A.T @ A, A.T @ b)
+    return res[0, 0], res[1, 0]
+
+
+def get_new_img(img, dx, dy):
+    x, y = np.meshgrid(np.arange(img.shape[1]), np.arange(img.shape[0]))
+    new_x, new_y = x - dx, y - dy
+    return interp2_img(img, new_x, new_y)
+
+
+def select_win(lst, slice1, slice2):
+    return [item[slice1, slice2] for item in lst]
