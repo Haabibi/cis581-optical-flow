@@ -53,14 +53,27 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
 #    i_Iy=interp2(Iy,nc,nr)
 
     winsize=15
-    win_l,win_r,win_t,win_b=getWinBound(img1.shape, feature[0], feature[1], winsize)
-        
+    s=(winsize+1)//2
+    x=np.ndarray.item(feature[:,0])
+    y=np.ndarray.item(feature[:,1])
+    win_l,win_r,win_t,win_b=getWinBound(img1.shape, x, y, winsize)
+    print("x,y",x,y)
+    x=int(x)
+    y=int(y)
+    img1_window=select_win([img1],slice(y-s,y+s),slice(x-s,x+s))
+    img2_window=select_win([img2],slice(y-s,y+s),slice(x-s,x+s))
+    dx_sum=0
+    dy_sum=0
+    for i in range(30):
+        dx,dy=optical_flow(img1_window,img2_window,winsize,1)
+        print("DX and DY",dx,dy)
+        dx_sum+=dx
+        dy_sum+=dy
+        img1_shift=get_new_img(img1,dx_sum,dy_sum)
+        img1_window=select_win([img1_shift],slice(y-s,y+s),slice(x-s,x+s))
+
     
-    A=np.hstack((Ix.reshape(-1,1),Iy.reshape(-1,1)))
-    b=-It.reshape(-1,1)
-    res=np.linalg.solve(A.T @ A, A.T @ b)
-    
-    new_feature = [res[0,0], res[1,0]]
+    new_feature = img1_window
     print("THIS IS RES", res)
     print("THIS IS NEW FEATURE", new_feature)
     return new_feature
