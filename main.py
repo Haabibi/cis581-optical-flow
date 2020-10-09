@@ -50,7 +50,6 @@ def objectTracking(rawVideo):
                 features, bbox = applyGeometricTransformation(features, new_features, bbox)
                 frame_old = frame.copy()
                 vis = frame.copy()
-                #cv2.imwrite
                 features = new_features
                 if(frame_cnt==20): #temp condition
                     break
