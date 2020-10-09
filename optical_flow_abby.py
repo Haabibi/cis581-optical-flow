@@ -29,7 +29,7 @@ def getFeatures(img,bbox):
         cv2.circle(img,(x,y),3,(0,0,255),3)
     
     cv2.imwrite("result.jpg",img*255)
-    return features
+    return map_to_original
 
 
 def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
@@ -84,8 +84,8 @@ def estimateAllTranslation(features, img1, img2):
     new_features =[]
     for idx in range(num_f):
         new_features.append(estimateFeatureTranslation(features[idx], Ix, Iy, img1, img2))
-    #print(new_features)
-    return new_features
+    
+    return np.array(new_features)
 
 
 def applyGeometricTransformation(features, new_features, bbox):
