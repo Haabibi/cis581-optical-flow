@@ -57,26 +57,30 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     x=np.ndarray.item(feature[:,0])
     y=np.ndarray.item(feature[:,1])
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, x, y, winsize)
-    print("x,y",x,y)
     x=int(x)
     y=int(y)
-    img1_window=select_win([img1],slice(y-s,y+s),slice(x-s,x+s))
-    img2_window=select_win([img2],slice(y-s,y+s),slice(x-s,x+s))
+    print("x,y",x,y)
+    #img1_window=select_win(img1,slice(y-s,y+s),slice(x-s,x+s))
+    img1_window=img1[y-s:y+s,x-s:x+s]
+    print(type(img1_window))
+    #img2_window=select_win(img2,slice(y-s,y+s),slice(x-s,x+s))
+    img2_window=img2[y-s:y+s,x-s:x+s]
     dx_sum=0
     dy_sum=0
     for i in range(30):
-        dx,dy=optical_flow(img1_window,img2_window,winsize,1)
+        dx,dy=optical_flow(img1_window,img2_window,5,1)
         print("DX and DY",dx,dy)
         dx_sum+=dx
         dy_sum+=dy
         img1_shift=get_new_img(img1,dx_sum,dy_sum)
-        img1_window=select_win([img1_shift],slice(y-s,y+s),slice(x-s,x+s))
+    #img1_window=select_win(img1_shift,slice(y-s,y+s),slice(x-s,x+s))
+        img1_window=img1_shift[y-s:y+s,x-s:x+s]
 
     
     new_feature = img1_window
-
-    print("THIS IS RES", res)
-    print("THIS IS NEW FEATURE", new_feature)
+#
+#    print("THIS IS RES", res)
+#    print("THIS IS NEW FEATURE", new_feature)
     return new_feature
 
 
@@ -99,7 +103,7 @@ def estimateAllTranslation(features, img1, img2):
     for idx in range(num_f):
         new_features.append(estimateFeatureTranslation(features[idx], Ix, Iy, img1, img2))
     #print(new_features)
-    return new_features
+    return np.array(new_features)
 
 
 def applyGeometricTransformation(features, new_features, bbox):

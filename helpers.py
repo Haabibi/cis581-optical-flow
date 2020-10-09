@@ -113,7 +113,7 @@ def optical_flow(img1, img2, ksize, sigma):
 def get_new_img(img, dx, dy):
     x, y = np.meshgrid(np.arange(img.shape[1]), np.arange(img.shape[0]))
     new_x, new_y = x - dx, y - dy
-    return interp2_img(img, new_x, new_y)
+    return interp2(img, new_x, new_y)
 
 
 def select_win(lst, slice1, slice2):

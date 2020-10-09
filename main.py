@@ -5,7 +5,7 @@ import imageio
 from skimage import img_as_ubyte
 import os
 
-from optical_flow_abby import *
+from optical_flow import *
 
 def objectTracking(rawVideo):
     """
@@ -40,6 +40,7 @@ def objectTracking(rawVideo):
         else:
             if frame_cnt % 5 ==0:
                 new_features = estimateAllTranslation(features, frame_old, frame)
+                print(new_features)
                 for i in new_features:
                     x,y = i.ravel()
                     x = int(x)
