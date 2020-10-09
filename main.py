@@ -23,6 +23,7 @@ def objectTracking(rawVideo):
         if not ret: continue
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255
         frame_cnt += 1
+        frame_to_show = frame.copy()
         print("frame:", frame_cnt)
         
         if frame_cnt == 1:
@@ -34,25 +35,29 @@ def objectTracking(rawVideo):
             bbox[:,1,0]=x+w
             bbox[:,1,1]=y+h
             print(bbox)
+            #cv2.rectangle(frame_to_show, (x, y), (x+w, y+h), (255,0,0),3)
+            #cv2.imwrite("BBOX.jpg", frame_to_show*255)
             features = getFeatures(frame, bbox)
+            print("THIS IS ORIGINAL FEATURES", features)
             frame_old = frame.copy()
         
         else:
-            if frame_cnt % 5 ==0:
+            if frame_cnt % 10 ==0:
                 new_features = estimateAllTranslation(features, frame_old, frame)
-                print(new_features)
+                print("THIS IS NEW FEATURES", new_features)
+                new_frame_to_show = frame.copy()
                 for i in new_features:
                     x,y = i.ravel()
                     x = int(x)
                     y =int(y)
-                    cv2.circle(frame,(x,y),3,(0,0,255),3)
+                    cv2.circle(new_frame_to_show,(x,y),3,(0,0,255),5)
                 
-                cv2.imwrite("result{}.jpg".format(frame_cnt),frame*255)
+                cv2.imwrite("result{}.jpg".format(frame_cnt),new_frame_to_show*255)
                 features, bbox = applyGeometricTransformation(features, new_features, bbox)
                 frame_old = frame.copy()
                 vis = frame.copy()
                 features = new_features
-                if(frame_cnt==20): #temp condition
+                if(frame_cnt==40): #temp condition
                     break
                 imgs.append(img_as_ubyte(vis))
             """ 
