@@ -5,7 +5,7 @@ import imageio
 from skimage import img_as_ubyte
 import os
 
-from optical_flow import *
+from optical_flow_abby import *
 
 def objectTracking(rawVideo):
     """
@@ -40,9 +40,18 @@ def objectTracking(rawVideo):
         else:
             if frame_cnt % 5 ==0:
                 new_features = estimateAllTranslation(features, frame_old, frame)
+                for i in new_features:
+                    x,y = i.ravel()
+                    x = int(x)
+                    y =int(y)
+                    cv2.circle(frame,(x,y),3,(0,0,255),3)
+                
+                cv2.imwrite("result{}.jpg".format(frame_cnt),frame*255)
                 features, bbox = applyGeometricTransformation(features, new_features, bbox)
                 frame_old = frame.copy()
                 vis = frame.copy()
+                #cv2.imwrite
+                features = new_features
                 if(frame_cnt==20): #temp condition
                     break
                 imgs.append(img_as_ubyte(vis))
