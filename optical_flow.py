@@ -74,6 +74,7 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
 
     
     new_feature = img1_window
+
     print("THIS IS RES", res)
     print("THIS IS NEW FEATURE", new_feature)
     return new_feature
