@@ -38,18 +38,19 @@ def objectTracking(rawVideo):
             frame_old = frame.copy()
         
         else:
-            new_features = estimateAllTranslation(features, frame_old, frame)
-            features, bbox = applyGeometricTransformation(features, new_features, bbox)
-            frame_old = frame.copy()
-            vis = frame.copy()
-            if(frame_cnt==20): #temp condition
-                break
-            
+            if frame_cnt % 5 ==0:
+                new_features = estimateAllTranslation(features, frame_old, frame)
+                features, bbox = applyGeometricTransformation(features, new_features, bbox)
+                frame_old = frame.copy()
+                vis = frame.copy()
+                if(frame_cnt==20): #temp condition
+                    break
+                imgs.append(img_as_ubyte(vis))
             """ 
             TODO: Plot feature points and bounding boxes on vis
             """
             
-            imgs.append(img_as_ubyte(vis))
+            
         
         # save the video every 20 frames
         if frame_cnt % 20 == 0 or frame_cnt > 200 and frame_cnt % 10 == 0:
@@ -61,6 +62,4 @@ if __name__ == "__main__":
     if not os.path.exists("results"): os.mkdir("results")
     objectTracking(rawVideo)
     
-
-
 
