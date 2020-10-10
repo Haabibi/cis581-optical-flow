@@ -17,23 +17,32 @@ def getFeatures(img,bbox):
         features: Coordinates of all feature points in first frame, (N, F, 2)
     Instruction: Please feel free to use cv2.goodFeaturesToTrack() or cv.cornerHarris()
         """
-    y1=np.ndarray.item(bbox[:,0,1])
-    y2=np.ndarray.item(bbox[:,1,1])
-    x1=np.ndarray.item(bbox[:,0,0])
-    x2=np.ndarray.item(bbox[:,1,0])
+    # y1=np.ndarray.item(bbox[:,0,1])
+    # y2=np.ndarray.item(bbox[:,1,1])
+    # x1=np.ndarray.item(bbox[:,0,0])
+    # x2=np.ndarray.item(bbox[:,1,0])
+    print("THIS IS BBOX SHPAE", bbox.shape)
+    y1 = int(bbox[0,1])
+    y2 = int(bbox[1,1])
+    x1 = int(bbox[0,0])
+    x2 = int(bbox[1,0])
     print("THIS IS IN GET FEATURES", y1, y2, x1, x2)
     mask = np.zeros(img.shape, dtype=np.uint8)
     mask[y1:y2, x1:x2] = 255
 
     features = cv2.goodFeaturesToTrack(img,30,0.01,10, mask=mask)
-    corners=np.int32(features)
+    #print("SHAPE OF FEATURES", features)
+    features_squeeze = features.reshape(-1, 2)
+    corners=np.int32(features_squeeze)
+    #print("THIS IS CONRENR", corners.shape)
     img_to_show = img.copy()
-    for i in corners:
-        x,y = i.ravel()
-        cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
     
-    cv2.imwrite("result.jpg",img_to_show*255)
-    return features
+    #for (x,y) in corners:
+        #x,y = i.ravel()
+    #    cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
+    
+    #cv2.imwrite("result.jpg",img_to_show*255)
+    return features_squeeze
 
 
 def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
@@ -51,8 +60,11 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     """
     winsize=15
     s=(winsize+1)//2
-    x=np.ndarray.item(feature[:,0])
-    y=np.ndarray.item(feature[:,1])
+    #print("THIS IS FEATURES in ESTIM", feature.shape)
+    #x=np.ndarray.item(feature[:,0])
+    #y=np.ndarray.item(feature[:,1])
+    x = feature[0]
+    y = feature[1]
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, x, y, winsize)
     
     x_1=np.linspace(win_l,win_r,winsize) #decimal coord patch image
@@ -86,6 +98,7 @@ def estimateAllTranslation(features, img1, img2):
         new_features: Coordinates of all feature points in second frame, (N, F, 2)
     """
     num_f=features.shape[0]
+    print("IN ESTIMATE ALL TRANS", features.shape, num_f)
     Ix,Iy=findGradient(img2)
     new_features =[]
     for idx in range(num_f):
@@ -105,9 +118,61 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
         bbox: Top-left and bottom-right corners of all bounding boxes, (F, 2, 2)
     Instruction: Please feel free to use skimage.transform.estimate_transform()
     """
+    print("THIS IS FEATURES", features)
+   # print("AT APPLY GEOMETRIC", new_features.shape)
+    dist_thresh = 8
+    # filter out 0,0s 
+    #print("THIS IS SIZE NEW_ FEAT", new_features.shape) #30,2
+    non_zero_mask = np.logical_or(features[:,0] > 1, features[ :,1]>1)
+    print("NON ZERO MASK", new_features[:, 0], non_zero_mask)
+    new_features = new_features[non_zero_mask]
+    features = features[non_zero_mask]
+    print("THIS IS NEW _FEAUTES", new_features)
     num_features = features.shape[0]
+    print("THIS IS NUM_ FEATURES", num_features)
+
+    if num_features < 30*0.4:
+        get_new_feat = getFeatures(frame, bbox)
+        print("!!!!!!BEFORE NEW FEAT", new_features.shape, get_new_feat.shape)
+        new_features = np.concatenate((new_features, get_new_feat), axis=0)
+        features = np.concatenate((features, get_new_feat), axis=0)
+        print("THIS IS NEW FEATURES!!!!!!!", new_features.shape)
+        num_features= features.shape[0]
+
+    transform = SimilarityTransform()
+    transformation = transform.estimate(features, new_features)
+    if transformation:
+        homoMatrix = transform.params
+        transformed_features = matrix_transform(features, homoMatrix)
+    for idx in range(num_features):
+        transformed_point = transformed_features[idx]
+        new_point = new_features[idx]
+        dist_btw_points = math.sqrt((transformed_point[0]- new_point[0])**2 + (transformed_point[1] - new_point[1])**2)
+        if dist_btw_points > dist_thresh:
+            new_features[idx,:] = np.array([0, 0])
+
+    #print("THIS IS BBOX", bbox, bbox.shape)
+    if transformation:
+        # bbox (n, 2, 2) currently setting idx to 0
+        bbox = matrix_transform(bbox, homoMatrix)
+    #print("THIS IS NEW BBOX", bbox)
+    #new_bbox = new_bbox.reshape(1, 2, 2)
+    #filterout 
+    # may want to filter out 
+    if idx in range(num_features):
+        new_bbox_x1 = bbox[0][0]
+        new_bbox_y1 = bbox[0][1]
+        new_bbox_x2 = bbox[1][0]
+        new_bbox_y2 = bbox[1][1]
+        #print("THIS IS NEW BBOX X1 to Y2", new_bbox_x1, new_bbox_x2, new_bbox_y1, new_bbox_y2)
+        if new_features[idx][0] < new_bbox_x1 or new_features[idx][1] < new_bbox_y1 or new_features[idx][0] > new_bbox_x2 or new_features[idx][1] > new_bbox_y2:
+            new_features[idx] = [0, 0]
+   #new_bbox = new_bbox.reshape(-1, 2, 2)
+    #print("RETURNED NEW BBOX", bbox, new_features)
+    return new_features, bbox
+            
+    """
     tmp_features = features.reshape((num_features, -1)) #5,2
-    print("shape",tmp_features.shape)
     tmp_new_features = new_features.reshape((num_features,-1)) #5,2
     tmp_bbox = bbox.reshape(2,-1)
     dist_thresh = 8
@@ -119,9 +184,7 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
         if dist_btw_points > dist_thresh:
             tmp_features[idx,:] = np.array([0, 0])
             tmp_new_features[idx,:] = np.array([0, 0])
-                #print("TMP_FEATURES",tmp_features)
 
-                #print("TMP_NEW_FEATURES",tmp_new_features)
     mask=np.logical_or(tmp_features[:,0]>0,tmp_features[:,1]>0)
     tmp_tmp_features = tmp_features[mask,:]
     tmp_tmp_new_features=tmp_new_features[mask,:]
@@ -134,8 +197,8 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
         new_bbox = matrix_transform(tmp_bbox, homoMatrix)
     else:
         new_bbox = tmp_bbox
-
-    features, bbox = tmp_new_features.reshape(1,num_features,-1), new_bbox.reshape(1,2,2)
+    
+    features, bbox = tmp_new_features.reshape(num_features,1,-1), new_bbox.reshape(1,2,2)
 
     if len(tmp_tmp_new_features) < num_features * 0.6:
         bbox = bbox.reshape(1, 2, 2)
@@ -145,4 +208,4 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
 
     return features, bbox
 
-
+    """
