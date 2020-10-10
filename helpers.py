@@ -101,8 +101,10 @@ def findGradient(img, ksize=5, sigma=1):
     Iy = scipy.signal.convolve2d(img, Gy, 'same', 'symm')
     return Ix, Iy
 
-def optical_flow(img1, img2, ksize, sigma):
-    Jx, Jy = findGradient(img2, ksize, sigma)
+def optical_flow(img1, img2, Ix,Iy,xx,yy):
+    #Jx, Jy = findGradient(img2, ksize, sigma)
+    Jx=interp2(Ix,xx,yy)
+    Jy=interp2(Iy,xx,yy)
     It = img2 - img1
     A = np.hstack((Jx.reshape(-1, 1), Jy.reshape(-1, 1)))
     b = -It.reshape(-1, 1)

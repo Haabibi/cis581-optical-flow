@@ -55,25 +55,22 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     y=np.ndarray.item(feature[:,1])
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, x, y, winsize)
     
-    win_l = int(win_l)
-    win_r = int(win_r)
-    win_t = int(win_t)
-    win_b = int(win_b)
-    img1_window=img1[win_t:win_b,win_l:win_r]
-    img2_window=img2[win_t:win_b,win_l:win_r]
+    x_1=np.linspace(win_l,win_r,winsize) #decimal coord patch image
+    y_1=np.linspace(win_t,win_b,winsize)
+    xx,yy=np.meshgrid(x_1,y_1)
+    
+    img1_window=interp2(img1,xx,yy)
+    img2_window=interp2(img2,xx,yy)
+    
     dx_sum=0
     dy_sum=0
     for i in range(10):
-        dx,dy=optical_flow(img1_window,img2_window,5,1)
+        dx,dy=optical_flow(img1_window,img2_window,Ix,Iy, xx,yy)
         dx_sum+=dx
         dy_sum+=dy
         img2_shift=get_new_img(img2,dx_sum,dy_sum)
-        img2_shift_to_show = img2_shift.copy()
-        cv2.imwrite("shift_{}.jpg".format(i), img2_shift_to_show*255)
-        img2_window=img2_shift[win_t:win_b,win_l:win_r]
+        img2_window=interp2(img2_shift,xx,yy)
 
-    dx_sum=np.round(dx_sum).astype(int)
-    dy_sum=np.round(dy_sum).astype(int)
     new_feature = feature + np.array((dx_sum, dy_sum))
     return new_feature
 
@@ -100,8 +97,8 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
     """
     Description: Transform bounding box corners onto new image frame
     Input:
-        features: Coordinates of all feature points in first frame, (F, N, 2)
-        new_features: Coordinates of all feature points in second frame, (F, N, 2)
+        features: Coordinates of all feature points in first frame, (N, F, 2)
+        new_features: Coordinates of all feature points in second frame, (N, F, 2)
         bbox: Top-left and bottom-right corners of all bounding boxes, (F, 2, 2)
     Output:
         features: Coordinates of all feature points in first frame after eliminating outliers, (F, N1, 2)
@@ -110,6 +107,7 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
     """
     num_features = features.shape[0]
     tmp_features = features.reshape((num_features, -1)) #5,2
+    print("shape",tmp_features.shape)
     tmp_new_features = new_features.reshape((num_features,-1)) #5,2
     tmp_bbox = bbox.reshape(2,-1)
     dist_thresh = 8
@@ -119,13 +117,15 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
         dist_btw_points = math.sqrt((old_point[0] - new_point[0])**2 + (old_point[1]-new_point[1])**2)
         print("DIST BETWEEN POINTS:", dist_btw_points)
         if dist_btw_points > dist_thresh:
-            tmp_features[idx] = np.array([-1, -1])
-            tmp_new_features[idx] = np.array([-1, -1])
-   
-    #tmp_tmp_features = tmp_features[[tmp_features[:, 0] >= 0 ]]
-    #tmp_tmp_new_features = tmp_tmp_features[[tmp_tmp_features[:, 0] >= 0 ]]
-    tmp_tmp_features = np.reshape(tmp_features[tmp_features>-1],(-1,2))
-    tmp_tmp_new_features=np.reshape(tmp_new_features[tmp_features>-1],(-1,2))
+            tmp_features[idx,:] = np.array([0, 0])
+            tmp_new_features[idx,:] = np.array([0, 0])
+                #print("TMP_FEATURES",tmp_features)
+
+                #print("TMP_NEW_FEATURES",tmp_new_features)
+    mask=np.logical_or(tmp_features[:,0]>0,tmp_features[:,1]>0)
+    tmp_tmp_features = tmp_features[mask,:]
+    tmp_tmp_new_features=tmp_new_features[mask,:]
+
     transform = SimilarityTransform()
     transformation = transform.estimate(tmp_tmp_features, tmp_tmp_new_features)
     
@@ -135,7 +135,8 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
     else:
         new_bbox = tmp_bbox
 
-    features, bbox = tmp_new_features, new_bbox
+    features, bbox = tmp_new_features.reshape(1,num_features,-1), new_bbox.reshape(1,2,2)
+
     if len(tmp_tmp_new_features) < num_features * 0.6:
         bbox = bbox.reshape(1, 2, 2)
         bbox = bbox.astype(int)
