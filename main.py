@@ -45,7 +45,7 @@ def objectTracking(rawVideo):
                     x,y = i.ravel()
                     x = int(x)
                     y =int(y)
-                    cv2.circle(new_frame_to_show,(x,y),3,(0,0,255),5)
+                    cv2.circle(new_frame_to_show,(x,y),3,(0,0,255),3)
                 
                 features, bbox = applyGeometricTransformation(features, new_features, bbox)
                 start_point = tuple(bbox[0].astype(int))

@@ -24,12 +24,12 @@ def getFeatures(img,bbox):
     mask = np.zeros(img.shape, dtype=np.uint8)
     mask[y1:y2, x1:x2] = 255
 
-    features = cv2.goodFeaturesToTrack(img,5,0.01,10, mask=mask)
+    features = cv2.goodFeaturesToTrack(img,30,0.01,10, mask=mask)
     corners=np.int32(features)
     img_to_show = img.copy()
     for i in corners:
         x,y = i.ravel()
-        cv2.circle(img_to_show,(x,y),3,(0,0,255),5)
+        cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
     
     cv2.imwrite("result.jpg",img_to_show*255)
     return features
@@ -120,13 +120,12 @@ def applyGeometricTransformation(features, new_features, bbox):
         print("DIST BETWEEN POINTS:", dist_btw_points)
         if dist_btw_points > dist_thresh:
             tmp_features[idx] = np.array([-1, -1])
-            print("THIS IS TMP FEATURE", tmp_features)
             tmp_new_features[idx] = np.array([-1, -1])
-    print("BEFORE FILTER: ", tmp_features, tmp_features.shape, tmp_new_features, tmp_new_features.shape)
-    print("LETS GETIITITT", tmp_features >= 0)
-    tmp_tmp_features = tmp_features[tmp_features[0] >= 0, tmp_features[1]>=0]
-    tmp_tmp_new_features = tmp_new_features[tmp_new_features[0] >= 0, tmp_new_features[1]>=0]
-    print("AFTER FILTER: ", tmp_tmp_features, tmp_tmp_features.shape, tmp_tmp_new_features, tmp_tmp_new_features.shape)
+   
+    #tmp_tmp_features = tmp_features[[tmp_features[:, 0] >= 0 ]]
+    #tmp_tmp_new_features = tmp_tmp_features[[tmp_tmp_features[:, 0] >= 0 ]]
+    tmp_tmp_features = np.reshape(tmp_features[tmp_features>-1],(-1,2))
+    tmp_tmp_new_features=np.reshape(tmp_new_features[tmp_features>-1],(-1,2))
     transform = SimilarityTransform()
     transformation = transform.estimate(tmp_tmp_features, tmp_tmp_new_features)
     
