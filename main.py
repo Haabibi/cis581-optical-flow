@@ -57,7 +57,7 @@ def objectTracking(rawVideo):
                 frame_old = frame.copy()
                 vis = frame.copy()
                 features = new_features
-                if(frame_cnt==40): #temp condition
+                if(frame_cnt==100): #temp condition
                     break
                 imgs.append(img_as_ubyte(vis))
             """ 

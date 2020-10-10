@@ -19,15 +19,12 @@ def getFeatures(img,bbox):
     y2=np.ndarray.item(bbox[:,1,1])
     x1=np.ndarray.item(bbox[:,0,0])
     x2=np.ndarray.item(bbox[:,1,0])
-    #crop_img=np.copy(img[y1:y2,x1:x2])
     mask = np.zeros(img.shape, dtype=np.uint8)
     mask[y1:y2, x1:x2] = 255
 
-    features = cv2.goodFeaturesToTrack(img,1,0.01,10, mask=mask)
+    features = cv2.goodFeaturesToTrack(img,25,0.01,10, mask=mask)
     print("THIS FEATURES", features)
-    # features = cv2.goodFeaturesToTrack(crop_img,30,0.01,10)
     corners=np.int32(features)
-    #map_to_original = np.array([[[x1, y1] for _ in range(len(corners))]]).reshape(corners.shape) + corners
     img_to_show = img.copy()
     for i in corners:
         x,y = i.ravel()
@@ -50,36 +47,23 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         new_feature: Coordinate of feature point in second frame, (2,)
     Instruction: Please feel free to use interp2() and getWinBound() from helpers
     """
-    It=img2-img1
-    nr=np.arange(img1.shape[0])
-    nc=np.arange(img1.shape[1])
-#    i_It=interp2(It,nc,nr)
-#    i_Ix=interp2(Ix,nc,nr)
-#    i_Iy=interp2(Iy,nc,nr)
-
-    winsize=15
+    winsize=30
     s=(winsize+1)//2
     x=np.ndarray.item(feature[:,0])
     y=np.ndarray.item(feature[:,1])
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, x, y, winsize)
-    x=int(x)
-    y=int(y)
-    win_l = int(win_l)
-    win_r = int(win_r)
-    win_t = int(win_t)
-    win_b = int(win_b)
-    #img1_window=select_win(img1,slice(y-s,y+s),slice(x-s,x+s))
-    #img1_window=img1[y-s:y+s,x-s:x+s]
-    img1_window=img1[win_t:win_b,win_l:win_r]
+    win_l = np.round(win_l).astype(int)
+    win_r = np.round(win_r).astype(int)
+    win_t = np.round(win_t).astype(int)
+    win_b = np.round(win_b).astype(int)
+    img1_window=img1[win_t:win_b,win_l:win_r].copy()
     #print("THIS IS IMG WINDOW", img1_window)
-    #img2_window=select_win(img2,slice(y-s,y+s),slice(x-s,x+s))
-    #img2_window=img2[y-s:y+s,x-s:x+s]
-    img2_window=img2[win_t:win_b,win_l:win_r]
+    img2_window=img2[win_t:win_b,win_l:win_r].copy()
     dx_sum=0
     dy_sum=0
     for i in range(30):
         #print("BEFORE OF: ", img1_window.shape, img2_window.shape)
-        #if img1_window.shape != (16, 16):
+        #if img2_window.shape != (16, 16):
         #    break
         dx,dy=optical_flow(img1_window,img2_window,5,1)
         dx_sum+=dx
@@ -89,9 +73,10 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         if i == 29:
             print(" FINAL DX DY", dx, dy, dx_sum, dy_sum)
         img2_shift=get_new_img(img2,dx_sum,dy_sum)
-        #img1_window=select_win(img1_shift,slice(y-s,y+s),slice(x-s,x+s))
-        img2_window=img2_shift[win_t:win_b,win_l:win_r]
+        img2_window=img2_shift[win_t:win_b,win_l:win_r].copy()
 
+    dx_sum=np.round(dx_sum).astype(int)
+    dy_sum=np.round(dy_sum).astype(int)
     new_feature = feature + np.array((dx_sum, dy_sum))
     return new_feature
 
