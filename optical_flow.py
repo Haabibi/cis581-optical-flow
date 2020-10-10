@@ -21,6 +21,7 @@ def getFeatures(img,bbox):
     y2=np.ndarray.item(bbox[:,1,1])
     x1=np.ndarray.item(bbox[:,0,0])
     x2=np.ndarray.item(bbox[:,1,0])
+    print("THIS IS IN GET FEATURES", y1, y2, x1, x2)
     mask = np.zeros(img.shape, dtype=np.uint8)
     mask[y1:y2, x1:x2] = 255
 
@@ -62,7 +63,7 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     img2_window=img2[win_t:win_b,win_l:win_r]
     dx_sum=0
     dy_sum=0
-    for i in range(30):
+    for i in range(10):
         dx,dy=optical_flow(img1_window,img2_window,5,1)
         dx_sum+=dx
         dy_sum+=dy
@@ -95,7 +96,7 @@ def estimateAllTranslation(features, img1, img2):
     return np.array(new_features)
 
 
-def applyGeometricTransformation(features, new_features, bbox):
+def applyGeometricTransformation(frame, features, new_features, bbox):
     """
     Description: Transform bounding box corners onto new image frame
     Input:
@@ -111,8 +112,7 @@ def applyGeometricTransformation(features, new_features, bbox):
     tmp_features = features.reshape((num_features, -1)) #5,2
     tmp_new_features = new_features.reshape((num_features,-1)) #5,2
     tmp_bbox = bbox.reshape(2,-1)
-    dist_thresh = 12
-    num_corners = 30 
+    dist_thresh = 8
     for idx in range(num_features):
         old_point = tmp_features[idx]
         new_point = tmp_new_features[idx]
@@ -136,8 +136,12 @@ def applyGeometricTransformation(features, new_features, bbox):
         new_bbox = tmp_bbox
 
     features, bbox = tmp_new_features, new_bbox
+    if len(tmp_tmp_new_features) < num_features * 0.6:
+        bbox = bbox.reshape(1, 2, 2)
+        bbox = bbox.astype(int)
+        new_features = getFeatures(frame, bbox)
+        features = new_features
 
-    #if len(tmp_get_features) 
     return features, bbox
 
 

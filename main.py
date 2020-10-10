@@ -47,7 +47,9 @@ def objectTracking(rawVideo):
                     y =int(y)
                     cv2.circle(new_frame_to_show,(x,y),3,(0,0,255),3)
                 
-                features, bbox = applyGeometricTransformation(features, new_features, bbox)
+                features, bbox = applyGeometricTransformation(frame, features, new_features, bbox)
+                print("BBOX IN MAIN", bbox.shape)
+                bbox = bbox.reshape(2,2)
                 start_point = tuple(bbox[0].astype(int))
                 end_point = tuple(bbox[1].astype(int))
                 
