@@ -46,10 +46,6 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         new_feature: Coordinate of feature point in second frame, (2,)
     Instruction: Please feel free to use interp2() and getWinBound() from helpers
     """
-    It=img2-img1
-    nr=np.arange(img1.shape[0])
-    nc=np.arange(img1.shape[1])
-
     winsize=15
     s=(winsize+1)//2
     x=np.ndarray.item(feature[:,0])
@@ -73,6 +69,8 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         cv2.imwrite("shift_{}.jpg".format(i), img2_shift_to_show*255)
         img2_window=img2_shift[win_t:win_b,win_l:win_r]
 
+    dx_sum=np.round(dx_sum).astype(int)
+    dy_sum=np.round(dy_sum).astype(int)
     new_feature = feature + np.array((dx_sum, dy_sum))
     return new_feature
 

@@ -58,7 +58,7 @@ def objectTracking(rawVideo):
                 cv2.imwrite("result_{}.jpg".format(frame_cnt), new_frame_to_show*255)
 
                 features = new_features
-                if(frame_cnt==40): #temp condition
+                if(frame_cnt==100): #temp condition
                     break
                 imgs.append(img_as_ubyte(vis))
             """ 
