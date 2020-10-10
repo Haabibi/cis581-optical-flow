@@ -3,6 +3,7 @@ import cv2
 from skimage import transform as tf
 from skimage.transform import SimilarityTransform
 from skimage.transform import matrix_transform
+import math
 from helpers import *
 
 
@@ -24,7 +25,8 @@ def getFeatures(img,bbox):
     mask[y1:y2, x1:x2] = 255
 
     features = cv2.goodFeaturesToTrack(img,5,0.01,10, mask=mask)
-    corners=np.int32(features)img_to_show = img.copy()
+    corners=np.int32(features)
+    img_to_show = img.copy()
     for i in corners:
         x,y = i.ravel()
         cv2.circle(img_to_show,(x,y),3,(0,0,255),5)
@@ -106,12 +108,27 @@ def applyGeometricTransformation(features, new_features, bbox):
     Instruction: Please feel free to use skimage.transform.estimate_transform()
     """
     num_features = features.shape[0]
-    tmp_features = features.reshape((num_features, -1))
-    tmp_new_features = new_features.reshape((num_features,-1))
+    tmp_features = features.reshape((num_features, -1)) #5,2
+    tmp_new_features = new_features.reshape((num_features,-1)) #5,2
     tmp_bbox = bbox.reshape(2,-1)
+    dist_thresh = 12
 
+    for idx in range(num_features):
+        old_point = tmp_features[idx]
+        new_point = tmp_new_features[idx]
+        dist_btw_points = math.sqrt((old_point[0] - new_point[0])**2 + (old_point[1]-new_point[1])**2)
+        print("DIST BETWEEN POINTS:", dist_btw_points)
+        if dist_btw_points > dist_thresh:
+            tmp_features[idx] = np.array([-1, -1])
+            print("THIS IS TMP FEATURE", tmp_features)
+            tmp_new_features[idx] = np.array([-1, -1])
+    print("BEFORE FILTER: ", tmp_features, tmp_features.shape, tmp_new_features, tmp_new_features.shape)
+    print("LETS GETIITITT", tmp_features >= 0)
+    tmp_tmp_features = tmp_features[tmp_features[0] >= 0, tmp_features[1]>=0]
+    tmp_tmp_new_features = tmp_new_features[tmp_new_features[0] >= 0, tmp_new_features[1]>=0]
+    print("AFTER FILTER: ", tmp_tmp_features, tmp_tmp_features.shape, tmp_tmp_new_features, tmp_tmp_new_features.shape)
     transform = SimilarityTransform()
-    transformation = transform.estimate(tmp_features, tmp_new_features)
+    transformation = transform.estimate(tmp_tmp_features, tmp_tmp_new_features)
     
     if transformation:
         homoMatrix = transform.params
@@ -119,7 +136,7 @@ def applyGeometricTransformation(features, new_features, bbox):
     else:
         new_bbox = tmp_bbox
 
-    features, bbox = features, new_bbox
+    features, bbox = tmp_new_features, new_bbox
 
 
     return features, bbox
