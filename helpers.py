@@ -102,7 +102,6 @@ def findGradient(img, ksize=5, sigma=1):
     return Ix, Iy
 
 def optical_flow(img1, img2, ksize, sigma):
-    #print("THIS OF: ", type(img1), type(img2), img1.shape, img2.shape)
     Jx, Jy = findGradient(img2, ksize, sigma)
     It = img2 - img1
     A = np.hstack((Jx.reshape(-1, 1), Jy.reshape(-1, 1)))

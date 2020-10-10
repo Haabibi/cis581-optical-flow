@@ -34,28 +34,29 @@ def objectTracking(rawVideo):
             bbox[:,0,1]=y
             bbox[:,1,0]=x+w
             bbox[:,1,1]=y+h
-            print(bbox)
-            #cv2.rectangle(frame_to_show, (x, y), (x+w, y+h), (255,0,0),3)
-            #cv2.imwrite("BBOX.jpg", frame_to_show*255)
             features = getFeatures(frame, bbox)
-            print("THIS IS ORIGINAL FEATURES", features)
             frame_old = frame.copy()
         
         else:
             if frame_cnt % 10 ==0:
                 new_features = estimateAllTranslation(features, frame_old, frame)
-                print("THIS IS NEW FEATURES", new_features)
-                new_frame_to_show = frame.copy()
+                new_frame_to_show = frame_old.copy()
                 for i in new_features:
                     x,y = i.ravel()
                     x = int(x)
                     y =int(y)
                     cv2.circle(new_frame_to_show,(x,y),3,(0,0,255),5)
                 
-                cv2.imwrite("result{}.jpg".format(frame_cnt),new_frame_to_show*255)
                 features, bbox = applyGeometricTransformation(features, new_features, bbox)
+                start_point = tuple(bbox[0].astype(int))
+                end_point = tuple(bbox[1].astype(int))
+                
                 frame_old = frame.copy()
                 vis = frame.copy()
+                
+                cv2.rectangle(new_frame_to_show, start_point, end_point, (255,0,0), 3)
+                cv2.imwrite("result_{}.jpg".format(frame_cnt), new_frame_to_show*255)
+
                 features = new_features
                 if(frame_cnt==40): #temp condition
                     break
