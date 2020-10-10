@@ -112,7 +112,7 @@ def applyGeometricTransformation(features, new_features, bbox):
     tmp_new_features = new_features.reshape((num_features,-1)) #5,2
     tmp_bbox = bbox.reshape(2,-1)
     dist_thresh = 12
-
+    num_corners = 30 
     for idx in range(num_features):
         old_point = tmp_features[idx]
         new_point = tmp_new_features[idx]
@@ -137,7 +137,7 @@ def applyGeometricTransformation(features, new_features, bbox):
 
     features, bbox = tmp_new_features, new_bbox
 
-
+    #if len(tmp_get_features) 
     return features, bbox
 
 
