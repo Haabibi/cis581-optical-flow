@@ -28,12 +28,12 @@ def getFeatures(img,bbox):
 
     features = cv2.goodFeaturesToTrack(img,30,0.01,10, mask=mask)
     corners=np.int32(features)
-    img_to_show = img.copy()
-    for i in corners:
-        x,y = i.ravel()
-        cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
-    
-    cv2.imwrite("result.jpg",img_to_show*255)
+#    img_to_show = img.copy()
+#    for i in corners:
+#        x,y = i.ravel()
+#        cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
+#
+#    cv2.imwrite("result.jpg",img_to_show*255)
     numOfFeatures=features.shape[0]
     return numOfFeatures,features
 
@@ -51,7 +51,7 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         new_feature: Coordinate of feature point in second frame, (2,)
     Instruction: Please feel free to use interp2() and getWinBound() from helpers
     """
-    winsize=15
+    winsize=35
     s=(winsize+1)//2
     #print("ESTIMEATE/FEATURE",feature,feature.shape,feature[:,0],feature[:,1])
     x=np.ndarray.item(feature[:,0])
@@ -110,7 +110,7 @@ def estimateAllTranslation(features, img1, img2):
     return np.array(new_features)
 
 
-def applyGeometricTransformation(frame, features, new_features, bbox):
+def applyGeometricTransformation(features, new_features, bbox):
     """
     Description: Transform bounding box corners onto new image frame
     Input:
@@ -161,7 +161,7 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
         new_features = getFeatures(frame, bbox)
         features = new_features
     """
-    dist_thresh=10
+    dist_thresh=15
 #    tmp_new_features=new_features.reshape((num_features,-1))
 #    tmp_features=features.reshape((num_features,-1))
 #    non_zero_mask=np.logical_or(tmp_features[:,0]>0,tmp_features[:,1]>0)
@@ -194,21 +194,20 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
             new_nonZeroFList[idx,:]=np.array([0,0])
 
 #print("NEWFEATURES\n",new_nonZeroFList)
-
-
+    new_nonZeroFListNum,new_nonZeroFList=extractNonZeroFeature(new_nonZeroFList)
 
     if transformation:
         new_tmp_bbox=matrix_transform(tmp_bbox,homoMatrix)
         tmp_bbox=new_tmp_bbox
 #print("NEW TMP BBOX\n",new_tmp_bbox,new_tmp_bbox.shape,tmp_bbox,tmp_bbox.shape)
-    if idx in range(idx_range):
+    if idx in range(new_nonZeroFListNum):
         new_tmp_bbox_x1=tmp_bbox[0][0]
         new_tmp_bbox_y1=tmp_bbox[0][1]
         new_tmp_bbox_x2=tmp_bbox[1][0]
         new_tmp_bbox_y2=tmp_bbox[1][1]
         if new_nonZeroFList[idx][0] < new_tmp_bbox_x1 or new_nonZeroFList[idx][1]<new_tmp_bbox_y1 or new_nonZeroFList[idx][0]>new_tmp_bbox_x2 or new_nonZeroFList[idx][1]>new_tmp_bbox_y2:
             new_nonZeroFList[idx]=[0,0]
-
+    new_nonZeroFListNum,new_nonZeroFList=extractNonZeroFeature(new_nonZeroFList)
     new_bbox=new_tmp_bbox.reshape(1,2,2)
     features_fillzeros=np.zeros((FListNum,2))
     
