@@ -90,39 +90,30 @@ def getWinBound(img_sz, startX, startY, win_size):
 
     return win_left, win_right, win_top, win_bottom
 
-def findGradient(img, ksize=5, sigma=1):
-    G = cv2.getGaussianKernel(ksize, sigma)
-    G = G @ G.T
-    fx = np.array([[1, -1]])
+def findGradient(img):
+    fx = np.array([[1,0, -1]])
     fy = fx.T
-    Gx = scipy.signal.convolve2d(G, fx, 'same', 'symm')[:, 1:]
-    Gy = scipy.signal.convolve2d(G, fy, 'same', 'symm')[1:, :]
-    Ix = scipy.signal.convolve2d(img, Gx, 'same', 'symm')
-    Iy = scipy.signal.convolve2d(img, Gy, 'same', 'symm')
+    Ix = scipy.signal.convolve2d(img, fx, 'same', 'symm')
+    Iy = scipy.signal.convolve2d(img, fy, 'same', 'symm')
     return Ix, Iy
 
-def optical_flow(img1, img2, Ix,Iy,xx,yy):
-    #Jx, Jy = findGradient(img2, ksize, sigma)
-    Jx=interp2(Ix,xx,yy)
-    Jy=interp2(Iy,xx,yy)
-
-    #Jx=Ix
-    #Jy=Iy
+def optical_flow(img1, img2, Jx,Jy):
     It = img2 - img1
     A = np.hstack((Jx.reshape(-1, 1), Jy.reshape(-1, 1)))
     b = -It.reshape(-1, 1)
     res = np.linalg.solve(A.T @ A, A.T @ b)
     return res[0, 0], res[1, 0]
 
+def calcJxJy(Ix,Iy,xx,yy):
+    Jx=interp2(Ix,xx,yy)
+    Jy=interp2(Iy,xx,yy)
+    return Jx,Jy
 
 def get_new_img(img, dx, dy):
     x, y = np.meshgrid(np.arange(img.shape[1]), np.arange(img.shape[0]))
     new_x, new_y = x + dx, y + dy
     return interp2(img, new_x, new_y)
 
-
-def select_win(lst, slice1, slice2):
-    return [item[slice1, slice2] for item in lst]
 
 def extractFeaturefromFeatures(features):
     featureNum=features.shape[0]
