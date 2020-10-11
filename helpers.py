@@ -105,6 +105,9 @@ def optical_flow(img1, img2, Ix,Iy,xx,yy):
     #Jx, Jy = findGradient(img2, ksize, sigma)
     Jx=interp2(Ix,xx,yy)
     Jy=interp2(Iy,xx,yy)
+
+    #Jx=Ix
+    #Jy=Iy
     It = img2 - img1
     A = np.hstack((Jx.reshape(-1, 1), Jy.reshape(-1, 1)))
     b = -It.reshape(-1, 1)
@@ -120,3 +123,14 @@ def get_new_img(img, dx, dy):
 
 def select_win(lst, slice1, slice2):
     return [item[slice1, slice2] for item in lst]
+
+def extractFeaturefromFeatures(features):
+    featureNum=features.shape[0]
+    feature=features.reshape((featureNum,-1))
+    return featureNum,feature
+
+def extractNonZeroFeature(featureList):
+    non_zero_mask=np.logical_or(featureList[:,0]>0,featureList[:,1]>0)
+    nonZero_feature=featureList[non_zero_mask,:]
+    nonZeroFeatureNum=nonZero_feature.shape[0]
+    return nonZeroFeatureNum,nonZero_feature

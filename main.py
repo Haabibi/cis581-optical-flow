@@ -34,36 +34,59 @@ def objectTracking(rawVideo):
             bbox[:,0,1]=y
             bbox[:,1,0]=x+w
             bbox[:,1,1]=y+h
-            features = getFeatures(frame, bbox)
+            initFeatureNum,features = getFeatures(frame, bbox)
             frame_old = frame.copy()
         
         else:
-            if frame_cnt % 10 ==0:
+            if frame_cnt % 5 ==0:
                 new_features = estimateAllTranslation(features, frame_old, frame)
+                new_frame_to_show = frame.copy()
+                new_features, bbox = applyGeometricTransformation(frame, features, new_features, bbox)
+                new_FListNum,new_FList=extractFeaturefromFeatures(new_features)
+                remainNumOfFList, remainFList=extractNonZeroFeature(new_FList)
                 
-                tmp_new_features, bbox = applyGeometricTransformation(frame, features, new_features, bbox)
-                print("BBOX IN MAIN", bbox)
+                if remainNumOfFList < initFeatureNum * 0.4:
+                    tmp_bbox = bbox.astype(int)
+                    x,new_features = getFeatures(frame, tmp_bbox)
+                    newFListNum,new_FList=extractFeaturefromFeatures(new_features)
+                    features_fillzeros=np.zeros((initFeatureNum,2))
+                    features_fillzeros[:newFListNum,:]=new_FList.copy()
+                    new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
+                    #print("NEWWBBOX/ FEATURE FILL ZEROS\n",features_fillzeros)
+                    print("NEW BBOX IS COMING/n/n/n/n")
+                else:
+                    features_fillzeros=np.zeros((initFeatureNum,2))
+                    features_fillzeros[:remainNumOfFList,:]=remainFList.copy()
+                    new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
+                
+                
+                print("BBOX IN MAIN", bbox.shape)
                 bbox = bbox.reshape(2,2)
                 start_point = tuple(bbox[0].astype(int))
                 end_point = tuple(bbox[1].astype(int))
                 
                 frame_old = frame.copy()
                 vis = frame.copy()
-                
-                new_frame_to_show = frame_old.copy()
-                for i in new_features:
+                j=0
+                tmp_new=np.reshape(new_features,(-1,2))
+                for i in tmp_new:
                     x,y = i.ravel()
                     x = int(x)
                     y =int(y)
-                    cv2.circle(new_frame_to_show,(x,y),3,(0,0,255),3)
-                
+                    #print("X AND Y",x,y)
+                    if x!=0 or y!=0:
+                        cv2.circle(new_frame_to_show,(x,y),3,(255,255,255),2)
+                        j+=1
+                print("NUM OF FEATURES",j)
                 cv2.rectangle(new_frame_to_show, start_point, end_point, (255,0,0), 3)
                 cv2.imwrite("result_{}.jpg".format(frame_cnt), new_frame_to_show*255)
-
-                features = tmp_new_features
+                
+                features = new_features
+                print("SHAPE",features.shape, new_features.shape)
                 if(frame_cnt==100): #temp condition
                     break
                 imgs.append(img_as_ubyte(vis))
+
             """ 
             TODO: Plot feature points and bounding boxes on vis
             """
