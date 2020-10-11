@@ -31,10 +31,8 @@ def getFeatures(img,bbox):
     mask[y1:y2, x1:x2] = 255
 
     features = cv2.goodFeaturesToTrack(img,30,0.01,10, mask=mask)
-    #print("SHAPE OF FEATURES", features)
     features_squeeze = features.reshape(-1, 2)
     corners=np.int32(features_squeeze)
-    #print("THIS IS CONRENR", corners.shape)
     img_to_show = img.copy()
     
     #for (x,y) in corners:
@@ -42,6 +40,7 @@ def getFeatures(img,bbox):
     #    cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
     
     #cv2.imwrite("result.jpg",img_to_show*255)
+    print("THIS AT GET FEAUTRES", features_squeeze)
     return features_squeeze
 
 
@@ -120,11 +119,10 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
     """
     print("THIS IS FEATURES", features)
    # print("AT APPLY GEOMETRIC", new_features.shape)
-    dist_thresh = 8
+    dist_thresh = 20
     # filter out 0,0s 
     #print("THIS IS SIZE NEW_ FEAT", new_features.shape) #30,2
     non_zero_mask = np.logical_or(features[:,0] > 1, features[ :,1]>1)
-    print("NON ZERO MASK", new_features[:, 0], non_zero_mask)
     new_features = new_features[non_zero_mask]
     features = features[non_zero_mask]
     print("THIS IS NEW _FEAUTES", new_features)
@@ -134,8 +132,8 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
     if num_features < 30*0.4:
         get_new_feat = getFeatures(frame, bbox)
         print("!!!!!!BEFORE NEW FEAT", new_features.shape, get_new_feat.shape)
-        new_features = np.concatenate((new_features, get_new_feat), axis=0)
-        features = np.concatenate((features, get_new_feat), axis=0)
+        #new_features = np.concatenate((new_features, get_new_feat), axis=0)
+        #features = np.concatenate((features, get_new_feat), axis=0)
         print("THIS IS NEW FEATURES!!!!!!!", new_features.shape)
         num_features= features.shape[0]
 
@@ -144,17 +142,20 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
     if transformation:
         homoMatrix = transform.params
         transformed_features = matrix_transform(features, homoMatrix)
+    else:
+        print("NO TRANSFORMED ON FEATURES\n")
     for idx in range(num_features):
         transformed_point = transformed_features[idx]
         new_point = new_features[idx]
         dist_btw_points = math.sqrt((transformed_point[0]- new_point[0])**2 + (transformed_point[1] - new_point[1])**2)
+        print("THis is DIST POINTS", dist_btw_points)
         if dist_btw_points > dist_thresh:
             new_features[idx,:] = np.array([0, 0])
 
-    #print("THIS IS BBOX", bbox, bbox.shape)
     if transformation:
-        # bbox (n, 2, 2) currently setting idx to 0
         bbox = matrix_transform(bbox, homoMatrix)
+    else:
+        print("NO TRANSFORMED ON BBOX")
     #print("THIS IS NEW BBOX", bbox)
     #new_bbox = new_bbox.reshape(1, 2, 2)
     #filterout 
@@ -167,6 +168,8 @@ def applyGeometricTransformation(frame, features, new_features, bbox):
         #print("THIS IS NEW BBOX X1 to Y2", new_bbox_x1, new_bbox_x2, new_bbox_y1, new_bbox_y2)
         if new_features[idx][0] < new_bbox_x1 or new_features[idx][1] < new_bbox_y1 or new_features[idx][0] > new_bbox_x2 or new_features[idx][1] > new_bbox_y2:
             new_features[idx] = [0, 0]
+   #new_zero_mask = np.logical_or(new_features[:,0] > 1, new_features[ :,1]>1)
+    #new_features = new_features[non_zero_mask]
    #new_bbox = new_bbox.reshape(-1, 2, 2)
     #print("RETURNED NEW BBOX", bbox, new_features)
     return new_features, bbox

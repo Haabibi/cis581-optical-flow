@@ -55,7 +55,7 @@ def objectTracking(rawVideo):
                 
                 frame_old = frame.copy()
                 vis = frame.copy()
-                
+                print("THIS IS BEFORE DRAWING", tmp_new_features)
                 new_frame_to_show = frame.copy()
                 for i in tmp_new_features:
                     x,y = i.ravel()
