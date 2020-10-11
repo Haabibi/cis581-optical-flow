@@ -51,7 +51,7 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
         new_feature: Coordinate of feature point in second frame, (2,)
     Instruction: Please feel free to use interp2() and getWinBound() from helpers
     """
-    winsize=11
+    winsize=15
     s=(winsize+1)//2
     #print("ESTIMATE/FEATURE",feature,feature.shape,feature[:,0],feature[:,1])
     x=np.ndarray.item(feature[:,0])
@@ -72,12 +72,12 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     dx_sum=0
     dy_sum=0
     Jx,Jy=calcJxJy(Ix,Iy,xx,yy)
-    for i in range(30):
+    for i in range(10):
         dx,dy=optical_flow(img1_window,img2_window,Jx,Jy)
         dx_sum+=dx
         dy_sum+=dy
         img2_shift=get_new_img(img2,dx_sum,dy_sum)
-        img2_window=img2_shift[win_t:win_b,win_l:win_r]
+        img2_window=interp2(img2_shift,xx,yy)
 
     new_feature = feature + np.array((dx_sum, dy_sum))
     return new_feature
@@ -143,12 +143,12 @@ def applyGeometricTransformation(features, new_features, bbox):
         if dist_btw_points>dist_thresh:
             new_nonZeroFList[idx,:]=np.array([0,0])
 
-    print("NEWFEATURES\n",new_nonZeroFList)
+#print("NEWFEATURES\n",new_nonZeroFList)
 
     if transformation:
         new_tmp_bbox=matrix_transform(tmp_bbox,homoMatrix)
         tmp_bbox=new_tmp_bbox
-    print("NEW TMP BBOX\n",new_tmp_bbox,new_tmp_bbox.shape,tmp_bbox,tmp_bbox.shape)
+#print("NEW TMP BBOX\n",new_tmp_bbox,new_tmp_bbox.shape,tmp_bbox,tmp_bbox.shape)
     if idx in range(new_nonZeroFListNum):
         new_tmp_bbox_x1=tmp_bbox[0][0]
         new_tmp_bbox_y1=tmp_bbox[0][1]

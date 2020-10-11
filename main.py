@@ -39,9 +39,10 @@ def objectTracking(rawVideo):
                 new_features, tmp_bbox = applyGeometricTransformation( features, new_features, bbox)
                 new_FListNum,new_FList=extractFeaturefromFeatures(new_features)
                 remainNumOfFList, remainFList=extractNonZeroFeature(new_FList)
-                print("TMPBBOX\n",tmp_bbox)
+
+                #print("TMPBBOX\n",tmp_bbox)
                 bbox=tmp_bbox
-                print("BBOX IN MAIN", bbox)
+                #print("BBOX IN MAIN", bbox)
                 bbox = bbox.reshape(2,2)
                 start_point = tuple(bbox[0].astype(int))
                 end_point = tuple(bbox[1].astype(int))
@@ -58,21 +59,21 @@ def objectTracking(rawVideo):
                     if x!=0 or y!=0:
                         cv2.circle(new_frame_to_show,(x,y),3,(255,255,255),-1)
                         j+=1
-                print("NUM OF FEATURES",j)
+            #print("NUM OF FEATURES",j)
                 cv2.rectangle(new_frame_to_show, start_point, end_point, (255,0,0), 2)
                 cv2.imwrite("result_{}.jpg".format(frame_cnt), new_frame_to_show*255)
                 #
                 if remainNumOfFList < initFeatureNum * 0.6:
                     int_bbox = bbox.astype(int)
                     int_bbox=int_bbox.reshape((1,2,2))
-                    print("NEWWBBOX\n",int_bbox)
+                    #print("NEWWBBOX\n",int_bbox)
                     x,new_features = getFeatures(frame, int_bbox)
                     newFListNum,new_FList=extractFeaturefromFeatures(new_features)
                     features_fillzeros=np.zeros((initFeatureNum,2))
                     features_fillzeros[:newFListNum,:]=new_FList.copy()
                     new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
                     
-                    print("NEW BBOX IS COMING/n/n/n/n")
+                    #print("NEW BBOX IS COMING/n/n/n/n")
                 
                 else:
                     bbox=tmp_bbox
