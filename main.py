@@ -28,7 +28,7 @@ def objectTracking(rawVideo):
     
     # Define how many objects to track
     F = 1
-    
+    numOfIteration=0
     while (cap.isOpened()):
         ret, frame = cap.read()
         if not ret: continue
@@ -36,6 +36,7 @@ def objectTracking(rawVideo):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255
         frame_cnt += 1
         H,W = frame.shape
+        
         if frame_cnt == 1:
             #bbox = np.zeros((F,2,2))
             bbox = np.zeros((F,2,2),dtype=int)
@@ -66,15 +67,17 @@ def objectTracking(rawVideo):
                 bbox_w=bbox[:,1,0]-bbox[:,0,0]
                 bbox_h=bbox[:,1,1]-bbox[:,0,1]
                 print("BBOX\n",bbox, bbox_w,bbox_h)
-                if bbox_w<30 or bbox_h <30:
+                if bbox_w<5 or bbox_h <5:
                     print("bbox too small")
                     break
                 elif bbox[:,1,0]==W or bbox[:,1,1]==H:
                     print("bbox out of bound")
                     break
+                elif numOfIteration == 3:
+                    break
                 int_bbox = bbox.astype(int)
                 int_bbox=int_bbox.reshape((F,2,2))
-                
+                numOfIteration+=1
                 x,new_features = getFeatures(frame, int_bbox)
                 newFListNum,new_FList=extractFeaturefromFeatures(new_features)
                 features_fillzeros=np.zeros((initFeatureNum,2))
@@ -82,7 +85,7 @@ def objectTracking(rawVideo):
                 new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
             else:
                 bbox=tmp_bbox
-
+            
         # # display the bbox
         for f in range(F):
              cv2.rectangle(vis, tuple(bbox[f,0].astype(np.int32)), tuple(bbox[f,1].astype(np.int32)), (0,0,255), thickness=2)
