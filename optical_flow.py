@@ -21,19 +21,12 @@ def getFeatures(img,bbox):
     y2=np.ndarray.item(bbox[:,1,1])
     x1=np.ndarray.item(bbox[:,0,0])
     x2=np.ndarray.item(bbox[:,1,0])
-    #print("THIS IS IN GET FEATURES", y1, y2, x1, x2)
     mask = np.zeros(img.shape, dtype=np.uint8)
     
     mask[int(y1):int(y2), int(x1):int(x2)] = 255
 
     features = cv2.goodFeaturesToTrack(img,30,0.01,10, mask=mask)
     corners=np.int32(features)
-#    img_to_show = img.copy()
-#    for i in corners:
-#        x,y = i.ravel()
-#        cv2.circle(img_to_show,(x,y),3,(0,0,255),3)
-#
-#    cv2.imwrite("result.jpg",img_to_show*255)
     numOfFeatures=features.shape[0]
     return numOfFeatures,features
 
@@ -53,7 +46,6 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     """
     winsize=15
     s=(winsize+1)//2
-    #print("ESTIMATE/FEATURE",feature,feature.shape,feature[:,0],feature[:,1])
     x=np.ndarray.item(feature[:,0])
     y=np.ndarray.item(feature[:,1])
     
@@ -61,12 +53,7 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     
     x_1=np.linspace(win_l,win_r,winsize) #decimal coord patch image
     y_1=np.linspace(win_t,win_b,winsize)
-    #print("x1, y1",x_1,y_1)
     xx,yy=np.meshgrid(x_1,y_1)
-    win_l=int(win_l)
-    win_r=int(win_r)
-    win_t=int(win_t)
-    win_b=int(win_b)
     img1_window=interp2(img1,xx,yy)
     img2_window=interp2(img2,xx,yy)
     dx_sum=0
@@ -93,8 +80,6 @@ def estimateAllTranslation(features, img1, img2):
     Output:
         new_features: Coordinates of all feature points in second frame, (N, F, 2)
     """
-    #print("ALL",features,features.shape)
-    #num_f=features.shape[0]
     num_f,FList=extractFeaturefromFeatures(features)
     
     Ix,Iy=findGradient(img2)
@@ -108,7 +93,7 @@ def estimateAllTranslation(features, img1, img2):
     return np.array(new_features)
 
 
-def applyGeometricTransformation(features, new_features, bbox):
+def applyGeometricTransformation(features, new_features, bbox,H,W):
     """
     Description: Transform bounding box corners onto new image frame
     Input:
@@ -139,17 +124,19 @@ def applyGeometricTransformation(features, new_features, bbox):
         transformed_point=transformed_features[idx]
         new_point=new_nonZeroFList[idx]
         dist_btw_points=math.sqrt((transformed_point[0]-new_point[0])**2 + (transformed_point[1]-new_point[1])**2)
-        #print("DISTANCE",dist_btw_points)
         if dist_btw_points>dist_thresh:
             new_nonZeroFList[idx,:]=np.array([0,0])
 
-#print("NEWFEATURES\n",new_nonZeroFList)
 
     if transformation:
         new_tmp_bbox=matrix_transform(tmp_bbox,homoMatrix)
         tmp_bbox=new_tmp_bbox
-#print("NEW TMP BBOX\n",new_tmp_bbox,new_tmp_bbox.shape,tmp_bbox,tmp_bbox.shape)
-    if idx in range(new_nonZeroFListNum):
+
+    if tmp_bbox[1][0] > W or tmp_bbox[1][1] > H:
+        tmp_bbox[1][0]=W
+        tmp_bbox[1][1]=H
+
+    for idx in range(new_nonZeroFListNum):
         new_tmp_bbox_x1=tmp_bbox[0][0]
         new_tmp_bbox_y1=tmp_bbox[0][1]
         new_tmp_bbox_x2=tmp_bbox[1][0]
@@ -164,7 +151,6 @@ def applyGeometricTransformation(features, new_features, bbox):
 
     features_fillzeros=features_fillzeros.reshape(FListNum,1,-1)
 
-#print("FEATURES FILLED UP WITH ZEROS",features_fillzeros)
     return features_fillzeros, new_bbox
 
 
