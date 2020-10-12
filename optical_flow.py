@@ -16,7 +16,7 @@ def getFeatures(img,bbox):
     Output:
         features: Coordinates of all feature points in first frame, (N, F, 2)
     Instruction: Please feel free to use cv2.goodFeaturesToTrack() or cv.cornerHarris()
-        """
+    """
     y1=np.ndarray.item(bbox[:,0,1])
     y2=np.ndarray.item(bbox[:,1,1])
     x1=np.ndarray.item(bbox[:,0,0])
