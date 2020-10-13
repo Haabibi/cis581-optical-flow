@@ -17,10 +17,15 @@ def getFeatures(img,bbox):
         features: Coordinates of all feature points in first frame, (N, F, 2)
     Instruction: Please feel free to use cv2.goodFeaturesToTrack() or cv.cornerHarris()
     """
-    y1=np.ndarray.item(bbox[:,0,1])
-    y2=np.ndarray.item(bbox[:,1,1])
-    x1=np.ndarray.item(bbox[:,0,0])
-    x2=np.ndarray.item(bbox[:,1,0])
+    # y1=np.ndarray.item(bbox[:,0,1])
+    # y2=np.ndarray.item(bbox[:,1,1])
+    # x1=np.ndarray.item(bbox[:,0,0])
+    # x2=np.ndarray.item(bbox[:,1,0])
+
+    y1=bbox[0,1]
+    y2=bbox[1,1]
+    x1=bbox[0,0]
+    x2=bbox[1,0]
     mask = np.zeros(img.shape, dtype=np.uint8)
     
     mask[int(y1):int(y2), int(x1):int(x2)] = 255
@@ -48,6 +53,8 @@ def estimateFeatureTranslation(feature, Ix, Iy, img1, img2):
     s=(winsize+1)//2
     x=np.ndarray.item(feature[:,0])
     y=np.ndarray.item(feature[:,1])
+    # x=feature[0]
+    # y=feature[1]
     
     win_l,win_r,win_t,win_b=getWinBound(img1.shape, x, y, winsize)
     
@@ -84,7 +91,6 @@ def estimateAllTranslation(features, img1, img2):
     
     Ix,Iy=findGradient(img2)
     new_features =[]
-    
     for idx in range(num_f):
         if FList[idx,0]==0 and FList[idx,1]==0:
             new_features.append(features[idx])
@@ -105,7 +111,7 @@ def applyGeometricTransformation(features, new_features, bbox,H,W):
         bbox: Top-left and bottom-right corners of all bounding boxes, (F, 2, 2)
     Instruction: Please feel free to use skimage.transform.estimate_transform()
     """
-    dist_thresh=10
+    dist_thresh=5
     newFListNum,new_FList=extractFeaturefromFeatures(new_features)
     FListNum,FList=extractFeaturefromFeatures(features)
     

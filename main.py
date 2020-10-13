@@ -27,8 +27,10 @@ def objectTracking(rawVideo):
     writer = cv2.VideoWriter(trackVideo, fourcc, fps, size)
     
     # Define how many objects to track
-    F = 1
+    
     numOfIteration=0
+    all_features = {}
+    all_bbox = {}
     while (cap.isOpened()):
         ret, frame = cap.read()
         if not ret: continue
@@ -39,61 +41,82 @@ def objectTracking(rawVideo):
         
         if frame_cnt == 1:
             #bbox = np.zeros((F,2,2))
-            bbox = np.zeros((F,2,2),dtype=int)
+           
             # Manually select objects on the first frame
-            for f in range(F):
-                x,y,w,h = np.int32(cv2.selectROI("roi", vis, fromCenter=False))
-                cv2.destroyAllWindows()
-                
-                bbox[:,0,0]=x
-                bbox[:,0,1]=y
-                bbox[:,1,0]=x+w
-                bbox[:,1,1]=y+h
-            
-            initFeatureNum,features = getFeatures(frame, bbox)
+            rois = np.int32(cv2.selectROIs("roi", vis, fromCenter=False))
+            cv2.destroyAllWindows()
+            F = rois.shape[0]
+            all_bbox = np.zeros((F,2,2),dtype=int)
+            #print("THIS IS MY ROIS", rois)
+            #for f in range(F):
+                #x,y,w,h = np.int32(cv2.selectROI("roi", vis, fromCenter=False))
+            for i in range(F):
+                x, y, w, h = rois[i]
+                all_bbox[i,0,0]=x
+                all_bbox[i,0,1]=y
+                all_bbox[i,1,0]=x+w
+                all_bbox[i,1,1]=y+h
+            print("THIS IS ALL BBOX", all_bbox, all_bbox.shape, all_bbox[0].shape)
+            for i in range(F):
+                initFeatureNum,features = getFeatures(frame, all_bbox[i])
+                new_FListNum,new_FList=extractFeaturefromFeatures(features)
+                all_features[i] = (initFeatureNum, new_FListNum, features, new_FList)
             frame_old = frame.copy()
-            new_FListNum,new_FList=extractFeaturefromFeatures(features)
             
         else:
             #print("Frame type",type(frame),type(frame_old),type(features))
-            new_features = estimateAllTranslation(features, frame_old, frame)
-            features, tmp_bbox = applyGeometricTransformation(features, new_features, bbox,H,W)
-            frame_old = frame.copy()
-            new_FListNum,new_FList=extractFeaturefromFeatures(new_features)
-            remainNumOfFList, remainFList=extractNonZeroFeature(new_FList)
-            
-            
-            if remainNumOfFList < initFeatureNum * 0.6:
-                bbox_w=bbox[:,1,0]-bbox[:,0,0]
-                bbox_h=bbox[:,1,1]-bbox[:,0,1]
-                print("BBOX\n",bbox, bbox_w,bbox_h)
-                if bbox_w<5 or bbox_h <5:
-                    print("bbox too small")
-                    break
-                elif bbox[:,1,0]==W or bbox[:,1,1]==H:
-                    print("bbox out of bound")
-                    break
-                elif numOfIteration == 3:
-                    break
-                int_bbox = bbox.astype(int)
-                int_bbox=int_bbox.reshape((F,2,2))
-                numOfIteration+=1
-                x,new_features = getFeatures(frame, int_bbox)
-                newFListNum,new_FList=extractFeaturefromFeatures(new_features)
-                features_fillzeros=np.zeros((initFeatureNum,2))
-                features_fillzeros[:newFListNum,:]=new_FList.copy()
-                new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
-            else:
-                bbox=tmp_bbox
-            
+            for i in range(F):
+                initFeatureNum, numFeat, features, _ = all_features[i]
+                bbox = all_bbox[i]
+                # 1
+                new_features = estimateAllTranslation(features, frame_old, frame)
+                # 2
+                features, tmp_bbox = applyGeometricTransformation(features, new_features, bbox,H,W)
+                frame_old = frame.copy()
+                # 3 Postprocess
+                new_FListNum,new_FList=extractFeaturefromFeatures(new_features)
+                remainNumOfFList, remainFList=extractNonZeroFeature(new_FList)
+                
+
+                if remainNumOfFList < initFeatureNum * 0.6:
+                    bbox_w=bbox[1,0]-bbox[0,0]
+                    bbox_h=bbox[1,1]-bbox[0,1]
+                    print("BBOX\n",bbox, bbox_w,bbox_h)
+                    if bbox_w<5 or bbox_h <5:
+                        print("bbox too small")
+                        break
+                    elif bbox[1,0]==W or bbox[1,1]==H:
+                        print("bbox out of bound")
+                        break
+                    elif numOfIteration == 3:
+                        break
+                    int_bbox = bbox.astype(int)
+                    int_bbox=int_bbox.reshape((2,2))
+                    print("GOT HERE ", int_bbox)
+                    numOfIteration+=1
+                    x,new_features = getFeatures(frame, int_bbox)
+                    newFListNum,new_FList=extractFeaturefromFeatures(new_features)
+                    features_fillzeros=np.zeros((initFeatureNum,2))
+                    features_fillzeros[:newFListNum,:]=new_FList.copy()
+                    new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
+                    all_bbox[i] = tmp_bbox
+                    all_features[i] = (initFeatureNum, newFListNum, new_features, new_features)
+                else:
+                    print("PROCESSING WELL", frame_cnt, i)
+                    bbox=tmp_bbox
+                    print("THIS IS BEFORE BBOX", all_bbox)
+                    all_bbox[i] = bbox
+                    print("THIS IS AFTER ALL_BBOX", all_bbox)
+                    all_features[i] = (initFeatureNum, remainNumOfFList, features, remainFList)
         # # display the bbox
         for f in range(F):
-             cv2.rectangle(vis, tuple(bbox[f,0].astype(np.int32)), tuple(bbox[f,1].astype(np.int32)), (0,0,255), thickness=2)
+             cv2.rectangle(vis, tuple(all_bbox[f,0].astype(np.int32)), tuple(all_bbox[f,1].astype(np.int32)), (0,0,255), thickness=2)
         
         # # display feature points
         for f in range(F):
-             for feat in new_FList:
-                 cv2.circle(vis, tuple(feat.astype(np.int32)), 2, (0,255,0), thickness=-1)
+            _,_, _, new_FList = all_features[f]
+            for feat in new_FList:
+                cv2.circle(vis, tuple(feat.astype(np.int32)), 2, (0,255,0), thickness=-1)
 
 
         # save to list
