@@ -46,7 +46,8 @@ def objectTracking(rawVideo):
             rois = np.int32(cv2.selectROIs("roi", vis, fromCenter=False))
             cv2.destroyAllWindows()
             F = rois.shape[0]
-            all_bbox = np.zeros((F,2,2),dtype=int)
+            all_bbox = np.zeros((F,2,2))
+            initFeatureNum=np.zeros((F),dtype=int)
             #print("THIS IS MY ROIS", rois)
             #for f in range(F):
                 #x,y,w,h = np.int32(cv2.selectROI("roi", vis, fromCenter=False))
@@ -58,57 +59,57 @@ def objectTracking(rawVideo):
                 all_bbox[i,1,1]=y+h
             print("THIS IS ALL BBOX", all_bbox, all_bbox.shape, all_bbox[0].shape)
             for i in range(F):
-                initFeatureNum,features = getFeatures(frame, all_bbox[i])
+                initFeatureNum[i],features = getFeatures(frame, all_bbox[i])
                 new_FListNum,new_FList=extractFeaturefromFeatures(features)
-                all_features[i] = (initFeatureNum, new_FListNum, features, new_FList)
+                all_features[i] = (initFeatureNum[i], new_FListNum, features, new_FList)
             frame_old = frame.copy()
             
         else:
             #print("Frame type",type(frame),type(frame_old),type(features))
+            
             for i in range(F):
-                initFeatureNum, numFeat, features, _ = all_features[i]
-                bbox = all_bbox[i]
+                initFeatureNum[i], numFeat, features, _ = all_features[i]
+                bbox = all_bbox[i,:,:]
                 # 1
                 new_features = estimateAllTranslation(features, frame_old, frame)
                 # 2
                 features, tmp_bbox = applyGeometricTransformation(features, new_features, bbox,H,W)
-                frame_old = frame.copy()
+                
                 # 3 Postprocess
                 new_FListNum,new_FList=extractFeaturefromFeatures(new_features)
                 remainNumOfFList, remainFList=extractNonZeroFeature(new_FList)
                 
-
-                if remainNumOfFList < initFeatureNum * 0.6:
+                if remainNumOfFList < initFeatureNum[i] * 0.6:
                     bbox_w=bbox[1,0]-bbox[0,0]
                     bbox_h=bbox[1,1]-bbox[0,1]
                     print("BBOX\n",bbox, bbox_w,bbox_h)
                     if bbox_w<5 or bbox_h <5:
                         print("bbox too small")
-                        break
+                        return
                     elif bbox[1,0]==W or bbox[1,1]==H:
                         print("bbox out of bound")
-                        break
+                        return
                     elif numOfIteration == 3:
-                        break
+                        return
                     int_bbox = bbox.astype(int)
                     int_bbox=int_bbox.reshape((2,2))
                     print("GOT HERE ", int_bbox)
                     numOfIteration+=1
                     x,new_features = getFeatures(frame, int_bbox)
                     newFListNum,new_FList=extractFeaturefromFeatures(new_features)
-                    features_fillzeros=np.zeros((initFeatureNum,2))
+                    features_fillzeros=np.zeros((initFeatureNum[i],2))
                     features_fillzeros[:newFListNum,:]=new_FList.copy()
-                    new_features=features_fillzeros.reshape(initFeatureNum,1,-1)
-                    all_bbox[i] = tmp_bbox
-                    all_features[i] = (initFeatureNum, newFListNum, new_features, new_features)
+                    new_features=features_fillzeros.reshape(initFeatureNum[i],1,-1)
+                    #all_bbox[i] = tmp_bbox
+                    all_features[i] = (initFeatureNum[i], new_FListNum, new_features, new_FList)
                 else:
                     print("PROCESSING WELL", frame_cnt, i)
-                    bbox=tmp_bbox
-                    print("THIS IS BEFORE BBOX", all_bbox)
-                    all_bbox[i] = bbox
-                    print("THIS IS AFTER ALL_BBOX", all_bbox)
-                    all_features[i] = (initFeatureNum, remainNumOfFList, features, remainFList)
+                    FListNum,FList=extractFeaturefromFeatures(features)
+                    all_bbox[i,:,:] = tmp_bbox.copy()
+                    all_features[i] = (initFeatureNum[i], FListNum, features, FList)
         # # display the bbox
+            frame_old = frame.copy()
+                
         for f in range(F):
              cv2.rectangle(vis, tuple(all_bbox[f,0].astype(np.int32)), tuple(all_bbox[f,1].astype(np.int32)), (0,0,255), thickness=2)
         
